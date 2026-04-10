@@ -1,1 +1,29 @@
 # Populate-the-Cruised-Plot-information-in-GIS
+import arcpy
+
+# Inputs
+layer_fc = r"GIS.MFP.Plots_Rivendell"
+source_table = r"2026 2Year RP1 Rivendell Maintenance Cruising Plots Information_02252026.csv"
+
+# Field names
+key_field = "Plot_ID"
+fields_to_update = ["Cruiser", "Date_Last_Inventoried", "Notes"]
+
+# Build dictionary from stand-alone table
+value_dict = {}
+with arcpy.da.SearchCursor(source_table, [key_field] + fields_to_update) as cursor:
+    for row in cursor:
+        plot_id = row[0]
+        value_dict[plot_id] = row[1:]
+
+# Update target layer
+with arcpy.da.UpdateCursor(layer_fc, [key_field] + fields_to_update) as cursor:
+    for row in cursor:
+        plot_id = row[0]
+        if plot_id in value_dict:
+            row[1] = value_dict[plot_id][0]  # Cruiser
+            row[2] = value_dict[plot_id][1]  # Date_Last_Inventoried
+            row[3] = value_dict[plot_id][2]  # Notes
+            cursor.updateRow(row)
+
+print("Done updating matching Plot_ID records.")
